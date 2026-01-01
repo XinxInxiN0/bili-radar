@@ -1,0 +1,34 @@
+{
+  "manifest_version": 1,
+  "name": "麦哔雷达",
+  "version": "1.0.0",
+  "description": "跟踪指定 B 站 UP 的新投稿视频，并将最新视频链接推送到订阅群；支持群内 /radar 指令管理订阅。",
+  "author": {
+    "name": "XinxInxiN0",
+    "url": "https://github.com/XinxInxiN0"
+  },
+  "license": "MIT",
+  "host_application": {
+    "min_version": "0.8.0"
+  },
+  "homepage_url": "https://github.com/XinxInxiN0/maibot-bili-radar",
+  "repository_url": "https://github.com/XinxInxiN0/maibot-bili-radar",
+  "keywords": [
+    "bilibili",
+    "video",
+    "notification",
+    "subscription",
+    "group"
+  ],
+  "categories": [
+    "Multimedia",
+    "Utility Tools"
+  ],
+  "default_locale": "zh-CN",
+  "plugin_info": {
+    "is_built_in": false,
+    "plugin_type": "general",
+    "components": []
+  },
+  "id": "XinxInxiN0.maibot-bili-radar"
+}
