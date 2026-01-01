@@ -20,7 +20,7 @@ class BiliPollingTask:
         self,
         dao,
         bili_client,
-        message_sender,
+        send_api_module,
         config,
     ):
         """初始化轮询任务
@@ -28,12 +28,12 @@ class BiliPollingTask:
         Args:
             dao: BiliSubscriptionDAO 实例
             bili_client: BiliClient 实例
-            message_sender: 消息发送器（send_api）
+            send_api_module: send_api 模块
             config: 插件配置对象
         """
         self.dao = dao
         self.bili_client = bili_client
-        self.message_sender = message_sender
+        self.send_api = send_api_module
         self.config = config
         
         # 任务控制
@@ -212,10 +212,16 @@ class BiliPollingTask:
         try:
             # 生成推送消息
             template = getattr(
-                self.config.push,
-                "message_template",
-                "🎬 新视频推送\n标题：{title}\n作者：{author}\n链接：{url}",
+                self.config,
+                "push.message_template",
+                None,
             )
+            if not template:
+                template = self.config.get_config(
+                    "push.message_template",
+                    "🎬 新视频推送\n标题：{title}\n作者：{author}\n链接：{url}",
+                )
+            
             message = template.format(
                 title=video.title,
                 author=video.author,
@@ -224,7 +230,7 @@ class BiliPollingTask:
             )
             
             # 发送到目标群
-            await self.message_sender.text_to_stream(subscription.stream_id, message)
+            await self.send_api.text_to_stream(subscription.stream_id, message)
             
             # 更新订阅的 last_* 字段
             await self.dao.update_last_video(

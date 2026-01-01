@@ -29,13 +29,19 @@ class WbiSigner:
         36, 20, 34, 44, 52
     ]
     
-    def __init__(self, nav_url: str = "https://api.bilibili.com/x/web-interface/nav"):
+    def __init__(
+        self,
+        nav_url: str = "https://api.bilibili.com/x/web-interface/nav",
+        headers: Optional[Dict[str, str]] = None,
+    ):
         """初始化 WBI 签名器
         
         Args:
             nav_url: 获取 WBI 密钥的 API 地址
+            headers: 默认请求头
         """
         self.nav_url = nav_url
+        self.headers = headers or {}
         
         # 密钥缓存
         self._img_key: Optional[str] = None
@@ -119,16 +125,12 @@ class WbiSigner:
         try:
             logger.info("Fetching WBI keys from nav API")
             
-            async with httpx.AsyncClient(timeout=10.0) as client:
+            async with httpx.AsyncClient(timeout=10.0, headers=self.headers) as client:
                 response = await client.get(self.nav_url)
                 response.raise_for_status()
                 data = response.json()
             
-            # 检查响应
-            if data.get("code") != 0:
-                raise Exception(f"Nav API returned error: {data}")
-            
-            # 提取 img_url 和 sub_url
+            # 提取 img_url 和 sub_url（无需检查 code，未登录状态也会返回有效数据）
             wbi_img = data.get("data", {}).get("wbi_img", {})
             img_url = wbi_img.get("img_url")
             sub_url = wbi_img.get("sub_url")
