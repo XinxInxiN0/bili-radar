@@ -8,6 +8,13 @@ from typing import Dict, List, Set
 import logging
 
 logger = logging.getLogger(__name__)
+import time
+
+
+import json
+from src.plugin_system.apis import database_api
+from src.common.database.database_model import Messages
+from src.chat.message_receive.chat_stream import get_chat_manager
 
 
 class BiliPollingTask:
@@ -229,9 +236,9 @@ class BiliPollingTask:
                 url=video.url,
             )
             
-            # 发送到目标群
-            await self.send_api.text_to_stream(subscription.stream_id, message)
-            
+            # 发送到目标群 (不存储消息，防止Bot自我回路过滤)
+            await self.send_api.text_to_stream(subscription.stream_id, message, storage_message=False)
+
             # 更新订阅的 last_* 字段
             await self.dao.update_last_video(
                 subscription.id,
