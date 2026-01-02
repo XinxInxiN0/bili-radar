@@ -73,31 +73,6 @@ maibot-bili-radar:
 /radar del 546195
 ```
 
-## 工作原理
-
-1. **订阅管理**：用户通过群指令添加订阅，插件记录 `(stream_id, mid)` 关系
-2. **后台轮询**：定时任务按配置的间隔轮询所有订阅的 UP 主
-3. **新视频检测**：对比最新视频的 `bvid` 和 `created_ts` 与数据库记录
-4. **推送与去重**：检测到新视频后推送到订阅群，并更新去重状态
-
-## 技术细节
-
-### 数据结构
-
-- **订阅表** `bili_subscription`：存储订阅关系和去重状态
-- **双条件去重**：同时比对 `bvid` 和 `created_ts`，避免 UP 删除重发导致的误判
-
-### WBI 签名
-
-使用 Bilibili Web 端 WBI 签名机制，自动获取和刷新签名密钥：
-- 密钥缓存：默认 12 小时刷新
-- 失败重试：签名失败时自动刷新密钥并重试
-
-### 错误处理
-
-- **-412 风控拦截**：记录日志并跳过当前周期
-- **网络超时**：配置超时时间，失败不阻塞其他 UP 的检查
-- **API 变更**：完善日志记录，快速定位问题
 
 ## 常见问题
 
@@ -120,42 +95,13 @@ A: 这是 Bilibili 的风控拦截。插件会自动跳过当前周期，可尝�
 - 减少同时订阅的 UP 数量
 - 配置 Cookie（可选的 `cookie_sessdata`）
 
-## 开发与贡献
-
-### 项目结构
-
-```
-maibot-bili-radar/
-├── _manifest.json       # 插件清单
-├── plugin.py            # 插件主入口
-├── models.py            # 数据库模型
-├── bili/                # Bilibili API 客户端
-│   ├── wbi_signer.py    # WBI 签名器
-│   ├── client.py        # API 客户端
-│   └── parser.py        # 数据解析器
-├── commands/            # 群指令
-│   ├── base.py          # 基础工具
-│   ├── subscription.py  # 订阅管理指令
-│   └── utils.py         # 工具指令
-└── tasks/               # 后台任务
-    └── polling_task.py  # 轮询任务
 ```
 
-### 技术栈
-
-- Python 3.8+
-- Peewee ORM（数据库）
-- MaiBot Plugin System
-- Bilibili WBI API
-
-## 许可证
-
-MIT License - 详见 [LICENSE](LICENSE)
 
 ## 致谢
 
-- [Bilibili-API-collect](https://github.com/SocialSisterYi/bilibili-API-collect) - API 文档参考
-- [MaiBot](https://docs.mai-mai.org/) - 插件框架
+- [Bilibili-API-collect](https://github.com/SocialSisterYi/bilibili-API-collect) - Bilibili API
+- [MaiBot](https://docs.mai-mai.org/) - 麦麦
 
 ---
 
