@@ -8,11 +8,11 @@ import hashlib
 import time
 from typing import Dict, Optional, Tuple
 from urllib.parse import urlencode
-import logging
-
 import httpx
 
-logger = logging.getLogger(__name__)
+from src.common.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class WbiSigner:
@@ -144,9 +144,7 @@ class WbiSigner:
             self._keys_fetched_at = time.time()
             
             logger.info(
-                f"WBI keys fetched successfully "
-                f"(img_key len={len(self._img_key)}, "
-                f"sub_key len={len(self._sub_key)})"
+                f"WBI keys fetched successfully: img_key={self._img_key[:4]}..., sub_key={self._sub_key[:4]}..."
             )
             
         except Exception as e:

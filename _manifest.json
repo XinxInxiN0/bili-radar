@@ -11,8 +11,8 @@
   "host_application": {
     "min_version": "0.8.0"
   },
-  "homepage_url": "https://github.com/XinxInxiN0/maibot-bili-radar",
-  "repository_url": "https://github.com/XinxInxiN0/maibot-bili-radar",
+  "homepage_url": "https://github.com/XinxInxiN0/bili-radar",
+  "repository_url": "https://github.com/XinxInxiN0/bili-radar",
   "keywords": [
     "bilibili",
     "video",
@@ -30,5 +30,5 @@
     "plugin_type": "general",
     "components": []
   },
-  "id": "XinxInxiN0.maibot-bili-radar"
+  "id": "XinxInxiN0.bili-radar"
 }

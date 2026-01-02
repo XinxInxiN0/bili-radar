@@ -5,16 +5,12 @@
 
 import asyncio
 from typing import Dict, List, Set
-import logging
+from src.common.logger import get_logger
 
-logger = logging.getLogger(__name__)
-import time
+logger = get_logger(__name__)
 
-
-import json
-from src.plugin_system.apis import database_api
-from src.common.database.database_model import Messages
-from src.chat.message_receive.chat_stream import get_chat_manager
+import httpx
+from src.plugin_system.apis import send_api
 
 
 class BiliPollingTask:
@@ -73,7 +69,7 @@ class BiliPollingTask:
     
     async def _run_loop(self) -> None:
         """轮询主循环"""
-        interval = getattr(self.config.polling, "interval_seconds", 120)
+        interval = self.config.get_config("polling.interval_seconds", 120)
         logger.info(f"Polling loop started with interval={interval}s")
         
         while self._running:
@@ -87,7 +83,7 @@ class BiliPollingTask:
     
     async def _poll_once(self) -> None:
         """执行一次轮询"""
-        logger.debug("Starting polling cycle")
+        logger.debug("BiliPolling: Starting polling cycle")
         
         try:
             # 1. 获取所有启用的订阅
@@ -100,30 +96,49 @@ class BiliPollingTask:
             # 2. 按 mid 去重聚合
             unique_mids: Set[int] = {sub.mid for sub in subscriptions}
             logger.info(
-                f"Polling cycle: {len(subscriptions)} subscriptions, "
+                f"BiliPolling: Polling cycle: {len(subscriptions)} subscriptions, "
                 f"{len(unique_mids)} unique mids"
             )
             
-            # 3. 并发抓取所有 mid 的最新视频
-            max_concurrency = getattr(self.config.polling, "max_concurrency", 3)
-            mid_to_video = await self._fetch_latest_videos_batch(
-                list(unique_mids),
-                max_concurrency,
+            # 3. 使用共享 Client 并发抓取所有 mid 的最新视频
+            timeout = self.config.get_config("bilibili.timeout_seconds", 10)
+            max_concurrency = self.config.get_config("polling.max_concurrency", 3)
+            
+            async with httpx.AsyncClient(timeout=timeout) as client:
+                mid_to_video = await self._fetch_latest_videos_batch(
+                    list(unique_mids),
+                    max_concurrency,
+                    client,
+                )
+            
+            logger.debug(
+                f"BiliPolling: Fetched {len(mid_to_video)}/{len(unique_mids)} videos successfully"
             )
             
-            logger.info(
-                f"Fetched {len(mid_to_video)}/{len(unique_mids)} videos successfully"
-            )
-            
-            # 4. 遍历订阅，判断是否需要推送
+            # 4. 遍历订阅，判断是否需要推送或补全初始化
             push_count = 0
+            initialized_count = 0
+            
             for subscription in subscriptions:
                 try:
                     latest_video = mid_to_video.get(subscription.mid)
                     if not latest_video:
                         continue
                     
-                    # 判断是否为新视频（双条件）
+                    # 补全初始化 (Healing logic): 如果没有历史记录，则只更新基准不推送
+                    if not subscription.last_bvid or not subscription.last_created_ts:
+                        await self.dao.update_last_video(
+                            subscription_id=subscription.id,
+                            bvid=latest_video.bvid,
+                            title=latest_video.title,
+                            created_ts=latest_video.created_ts,
+                            up_name=latest_video.author,
+                        )
+                        initialized_count += 1
+                        logger.info(f"Healed subscription baseline for {latest_video.author}({subscription.mid})")
+                        continue
+                    
+                    # 正常判断是否为新视频
                     if self._should_push(latest_video, subscription):
                         # 推送并更新
                         await self._push_and_update(latest_video, subscription)
@@ -136,7 +151,10 @@ class BiliPollingTask:
                     )
                     continue
             
-            logger.info(f"Polling cycle completed: {push_count} videos pushed")
+            logger.info(
+                f"BiliPolling: Polling cycle completed: {push_count} pushed, "
+                f"{initialized_count} healed"
+            )
         
         except Exception as e:
             logger.error(f"Error in poll_once: {e}", exc_info=True)
@@ -145,12 +163,14 @@ class BiliPollingTask:
         self,
         mid_list: List[int],
         max_concurrency: int,
+        client: httpx.AsyncClient,
     ) -> Dict[int, any]:
         """批量抓取最新视频（带并发控制）
         
         Args:
             mid_list: mid 列表
             max_concurrency: 最大并发数
+            client: 共享的 httpx 客户端
             
         Returns:
             {mid: VideoInfo} 字典
@@ -159,7 +179,7 @@ class BiliPollingTask:
         
         async def fetch_with_semaphore(mid: int):
             async with semaphore:
-                return mid, await self.bili_client.fetch_latest_video(mid)
+                return mid, await self.bili_client.fetch_latest_video(mid, client=client)
         
         # 并发执行
         tasks = [fetch_with_semaphore(mid) for mid in mid_list]
@@ -190,7 +210,7 @@ class BiliPollingTask:
         Returns:
             是否应该推送
         """
-        # 如果没有历史记录，不推送（初次订阅时已记录基准）
+        # 如果没有历史记录，交由 _poll_once 的 healing 逻辑处理
         if not subscription.last_bvid or not subscription.last_created_ts:
             return False
         
@@ -218,16 +238,10 @@ class BiliPollingTask:
         """
         try:
             # 生成推送消息
-            template = getattr(
-                self.config,
+            template = self.config.get_config(
                 "push.message_template",
-                None,
+                "🎬 新视频推送\n标题：{title}\n作者：{author}\n链接：{url}",
             )
-            if not template:
-                template = self.config.get_config(
-                    "push.message_template",
-                    "🎬 新视频推送\n标题：{title}\n作者：{author}\n链接：{url}",
-                )
             
             message = template.format(
                 title=video.title,
@@ -241,9 +255,11 @@ class BiliPollingTask:
 
             # 更新订阅的 last_* 字段
             await self.dao.update_last_video(
-                subscription.id,
-                video.bvid,
-                video.created_ts,
+                subscription_id=subscription.id,
+                bvid=video.bvid,
+                title=video.title,
+                created_ts=video.created_ts,
+                up_name=video.author,
             )
             
             logger.info(

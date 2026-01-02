@@ -4,14 +4,15 @@
 """
 
 from typing import Optional, Dict, Any
-import logging
 
 import httpx
+
+from src.common.logger import get_logger
 
 from .wbi_signer import WbiSigner
 from .parser import BiliParser, VideoInfo
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class BiliClient:
@@ -19,6 +20,9 @@ class BiliClient:
     
     # 投稿列表接口（WBI 签名）
     ARC_SEARCH_URL = "https://api.bilibili.com/x/space/wbi/arc/search"
+    
+    # 用户基本信息接口（WBI 签名）
+    USER_INFO_URL = "https://api.bilibili.com/x/space/wbi/acc/info"
     
     def __init__(
         self,
@@ -56,17 +60,74 @@ class BiliClient:
         if cookie_buvid3:
             self.cookies["buvid3"] = cookie_buvid3
             logger.info(f"buvid3 configured (length={len(cookie_buvid3)})")
+
+    async def fetch_user_info(
+        self,
+        mid: int,
+        retry_on_sign_error: bool = True,
+        client: Optional[httpx.AsyncClient] = None,
+    ) -> Optional[str]:
+        """获取 UP 主的昵称
+        
+        Args:
+            mid: UP 主 mid
+            retry_on_sign_error: 签名错误时是否刷新密钥并重试
+            client: 可选的共享 httpx 客户端
+            
+        Returns:
+            昵称字符串，失败返回 None
+        """
+        try:
+            params = {"mid": mid}
+            signed_params = await self.wbi_signer.sign_params(params)
+            
+            if client:
+                response = await client.get(
+                    self.USER_INFO_URL,
+                    params=signed_params,
+                    headers=self.headers,
+                    cookies=self.cookies,
+                )
+            else:
+                async with httpx.AsyncClient(timeout=self.timeout) as new_client:
+                    response = await new_client.get(
+                        self.USER_INFO_URL,
+                        params=signed_params,
+                        headers=self.headers,
+                        cookies=self.cookies,
+                    )
+            
+            response.raise_for_status()
+            data = response.json()
+            code = data.get("code")
+            
+            if code != 0:
+                message = data.get("message", "Unknown error")
+                logger.warning(f"User Info API error for mid={mid}: code={code}, message={message}")
+                if retry_on_sign_error and "sign" in message.lower():
+                    await self.wbi_signer.refresh_keys()
+                    return await self.fetch_user_info(mid, retry_on_sign_error=False, client=client)
+                return None
+            
+            name = data.get("data", {}).get("name")
+            return name
+            
+        except Exception as e:
+            logger.error(f"Failed to fetch user info for mid={mid}: {e}")
+            return None
     
     async def fetch_latest_video(
         self,
         mid: int,
         retry_on_sign_error: bool = True,
+        client: Optional[httpx.AsyncClient] = None,
     ) -> Optional[VideoInfo]:
         """获取 UP 主的最新视频
         
         Args:
             mid: UP 主 mid
             retry_on_sign_error: 签名错误时是否刷新密钥并重试
+            client: 可选的共享 httpx 客户端
             
         Returns:
             VideoInfo 对象，失败返回 None
@@ -79,20 +140,30 @@ class BiliClient:
                 "pn": 1,
                 "ps": 1,  # 只取最新 1 条
             }
+            logger.debug(f"BiliClient: Fetching latest video for mid={mid}, params={params}")
             
             # 添加 WBI 签名
             signed_params = await self.wbi_signer.sign_params(params)
             
             # 发送请求
-            async with httpx.AsyncClient(timeout=self.timeout) as client:
+            if client:
                 response = await client.get(
                     self.ARC_SEARCH_URL,
                     params=signed_params,
                     headers=self.headers,
                     cookies=self.cookies,
                 )
-                response.raise_for_status()
-                data = response.json()
+            else:
+                async with httpx.AsyncClient(timeout=self.timeout) as new_client:
+                    response = await new_client.get(
+                        self.ARC_SEARCH_URL,
+                        params=signed_params,
+                        headers=self.headers,
+                        cookies=self.cookies,
+                    )
+            
+            response.raise_for_status()
+            data = response.json()
             
             # 检查响应 code
             code = data.get("code")
@@ -112,7 +183,7 @@ class BiliClient:
                     logger.info(f"Possible signature error, refreshing WBI keys and retrying (mid={mid})")
                     await self.wbi_signer.refresh_keys()
                     # 递归重试一次（retry_on_sign_error=False 避免无限循环）
-                    return await self.fetch_latest_video(mid, retry_on_sign_error=False)
+                    return await self.fetch_latest_video(mid, retry_on_sign_error=False, client=client)
                 
                 return None
             

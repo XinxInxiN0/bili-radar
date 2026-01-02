@@ -56,6 +56,7 @@ class RadarAddCommand(BaseCommand):
     
     async def execute(self) -> Tuple[bool, str, int]:
         """执行添加订阅"""
+        logger.debug(f"Executing RadarAddCommand: {self.message.raw_message}")
         try:
             # 解析 mid
             match = re.match(self.command_pattern, self.message.raw_message.strip())
@@ -88,9 +89,9 @@ class RadarAddCommand(BaseCommand):
             # 检查是否已订阅
             existing = await dao.get_subscription(stream_id, mid)
             if existing:
-                await self.send_text(f"⚠️ 已订阅 UP 主 {mid}，无需重复添加", storage_message=False)
+                up_display = f"{existing.up_name} ({mid})" if existing.up_name else str(mid)
+                await self.send_text(f"⚠️ 已订阅 UP 主 {up_display}，无需重复添加", storage_message=False)
                 return True, None, 2
-            
             # 获取最新视频（作为初始基准）
             logger.info(f"Fetching latest video for mid={mid} to initialize subscription")
             latest_video = await bili_client.fetch_latest_video(mid)
@@ -100,29 +101,35 @@ class RadarAddCommand(BaseCommand):
                 await dao.add_subscription(
                     stream_id=stream_id,
                     mid=mid,
+                    up_name=latest_video.author,
                     last_bvid=latest_video.bvid,
+                    last_title=latest_video.title,
                     last_created_ts=latest_video.created_ts,
                 )
                 logger.info(
                     f"Subscription added: stream_id={stream_id}, mid={mid}, "
-                    f"initialized with bvid={latest_video.bvid}"
+                    f"UP={latest_video.author}, bvid={latest_video.bvid}"
                 )
                 response_msg = (
-                    f"✅ 成功订阅 UP 主 {mid}\n"
+                    f"✅ 成功订阅 UP 主 {latest_video.author} ({mid})\n"
                     f"当前最新视频：{latest_video.title}\n"
                     f"后续将自动推送新视频"
                 )
                 await self.send_text(response_msg, storage_message=False)
                 return (True, None, 2)
             else:
-                # 获取失败，仍然创建订阅但不初始化
-                await dao.add_subscription(stream_id=stream_id, mid=mid)
+                # 尝试通过 user_info 获取名称
+                up_name = await bili_client.fetch_user_info(mid)
+                up_display = f"{up_name} ({mid})" if up_name else str(mid)
+                
+                # 获取失败，仍然创建订阅但不初始化视频信息
+                await dao.add_subscription(stream_id=stream_id, mid=mid, up_name=up_name)
                 logger.warning(
                     f"Failed to fetch latest video for mid={mid}, "
                     f"subscription created without initialization"
                 )
                 response_msg = (
-                    f"⚠️ 已订阅 UP 主 {mid}，但无法获取最新视频信息\n"
+                    f"⚠️ 已订阅 UP 主 {up_display}，但无法获取最新视频信息\n"
                     f"可能原因：UP 无投稿、API 限流或 mid 无效"
                 )
                 await self.send_text(response_msg, storage_message=False)
@@ -153,6 +160,7 @@ class RadarDelCommand(BaseCommand):
     command_pattern = r"^/radar\s+del\s+(\d+)$"
     
     async def execute(self) -> Tuple[bool, str, int]:
+        logger.debug(f"Executing RadarDelCommand: {self.message.raw_message}")
         try:
             match = re.match(self.command_pattern, self.message.raw_message.strip())
             if not match:
@@ -173,14 +181,18 @@ class RadarDelCommand(BaseCommand):
                 await self.send_text("❌ 数据库未初始化", storage_message=False)
                 return True, None, 2
             
+            # 先查找现有订阅以获取名称
+            existing = await dao.get_subscription(stream_id, mid)
+            up_display = f"{existing.up_name} ({mid})" if existing and existing.up_name else str(mid)
+            
             success = await dao.remove_subscription(stream_id, mid)
             if success:
                 logger.info(f"Subscription removed: stream_id={stream_id}, mid={mid}")
-                response_msg = f"✅ 已删除 UP 主 {mid} 的订阅"
+                response_msg = f"✅ 已删除 UP 主 {up_display} 的订阅"
                 await self.send_text(response_msg, storage_message=False)
                 return True, None, 2
             else:
-                response_msg = f"⚠️ 未订阅 UP 主 {mid}，无需删除"
+                response_msg = f"⚠️ 未订阅 UP 主 {up_display}，无需删除"
                 await self.send_text(response_msg, storage_message=False)
                 return True, None, 2
         
@@ -198,6 +210,7 @@ class RadarListCommand(BaseCommand):
     command_pattern = r"^/radar\s+list$"
     
     async def execute(self) -> Tuple[bool, str, int]:
+        logger.debug(f"Executing RadarListCommand: {self.message.raw_message}")
         try:
             stream_id = self.message.chat_stream.stream_id if self.message.chat_stream else ""
             
@@ -223,8 +236,15 @@ class RadarListCommand(BaseCommand):
             lines = ["📋 本群订阅列表：\n"]
             for i, sub in enumerate(subscriptions, 1):
                 status = "✅" if sub.enabled else "🔕"
-                last_info = f"最新：{sub.last_bvid}" if sub.last_bvid else "暂无记录"
-                lines.append(f"{i}. {status} UP {sub.mid}\n   {last_info}")
+                up_display = f"{sub.up_name} ({sub.mid})" if sub.up_name else f"UP {sub.mid}"
+                
+                if sub.last_bvid:
+                    video_display = f"{sub.last_title} ({sub.last_bvid})" if sub.last_title else sub.last_bvid
+                    last_info = f"最新：{video_display}"
+                else:
+                    last_info = "最新：暂无记录"
+                    
+                lines.append(f"{i}. {status} {up_display}\n   {last_info}")
             
             response_msg = "\n".join(lines)
             await self.send_text(response_msg, storage_message=False)
@@ -244,6 +264,7 @@ class RadarOnCommand(BaseCommand):
     command_pattern = r"^/radar\s+on\s+(\d+)$"
     
     async def execute(self) -> Tuple[bool, str, int]:
+        logger.debug(f"Executing RadarOnCommand: {self.message.raw_message}")
         try:
             match = re.match(self.command_pattern, self.message.raw_message.strip())
             if not match:
@@ -264,14 +285,18 @@ class RadarOnCommand(BaseCommand):
                 await self.send_text("❌ 数据库未初始化", storage_message=False)
                 return True, None, 2
             
+            # 先获取现有订阅名称
+            existing = await dao.get_subscription(stream_id, mid)
+            up_display = f"{existing.up_name} ({mid})" if existing and existing.up_name else str(mid)
+            
             success = await dao.toggle_enabled(stream_id, mid, enabled=True)
             if success:
                 logger.info(f"Subscription enabled: stream_id={stream_id}, mid={mid}")
-                response_msg = f"✅ 已启用 UP 主 {mid} 的推送"
+                response_msg = f"✅ 已启用 UP 主 {up_display} 的推送"
                 await self.send_text(response_msg, storage_message=False)
                 return True, None, 2
             else:
-                response_msg = f"⚠️ 未订阅 UP 主 {mid}"
+                response_msg = f"⚠️ 未订阅 UP 主 {up_display}"
                 await self.send_text(response_msg, storage_message=False)
                 return True, None, 2
         
@@ -289,6 +314,7 @@ class RadarOffCommand(BaseCommand):
     command_pattern = r"^/radar\s+off\s+(\d+)$"
     
     async def execute(self) -> Tuple[bool, str, int]:
+        logger.debug(f"Executing RadarOffCommand: {self.message.raw_message}")
         try:
             match = re.match(self.command_pattern, self.message.raw_message.strip())
             if not match:
@@ -309,14 +335,18 @@ class RadarOffCommand(BaseCommand):
                 await self.send_text("❌ 数据库未初始化", storage_message=False)
                 return True, None, 2
             
+            # 先获取现有订阅名称
+            existing = await dao.get_subscription(stream_id, mid)
+            up_display = f"{existing.up_name} ({mid})" if existing and existing.up_name else str(mid)
+            
             success = await dao.toggle_enabled(stream_id, mid, enabled=False)
             if success:
                 logger.info(f"Subscription disabled: stream_id={stream_id}, mid={mid}")
-                response_msg = f"🔕 已禁用 UP 主 {mid} 的推送（订阅保留）"
+                response_msg = f"🔕 已禁用 UP 主 {up_display} 的推送（订阅保留）"
                 await self.send_text(response_msg, storage_message=False)
                 return True, None, 2
             else:
-                response_msg = f"⚠️ 未订阅 UP 主 {mid}"
+                response_msg = f"⚠️ 未订阅 UP 主 {up_display}"
                 await self.send_text(response_msg, storage_message=False)
                 return True, None, 2
         
@@ -334,6 +364,7 @@ class RadarTestCommand(BaseCommand):
     command_pattern = r"^/radar\s+test\s+(\d+)$"
     
     async def execute(self) -> Tuple[bool, str, int]:
+        logger.debug(f"Executing RadarTestCommand: {self.message.raw_message}")
         try:
             match = re.match(self.command_pattern, self.message.raw_message.strip())
             if not match:
@@ -383,10 +414,12 @@ class RadarTestCommand(BaseCommand):
             
             logger.info(f"Test push successful: mid={mid}, bvid={latest_video.bvid}")
             
-            await self.send_text(
-                f"✅ 测试推送成功\nUP 主：{mid}\n视频：{latest_video.title}",
-                storage_message=False
+            response_msg = (
+                f"✅ 测试推送成功\n"
+                f"UP 主：{latest_video.author} ({mid})\n"
+                f"视频：{latest_video.title}"
             )
+            await self.send_text(response_msg, storage_message=False)
             return True, None, 2
         
         except Exception as e:
