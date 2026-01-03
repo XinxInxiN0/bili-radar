@@ -524,7 +524,7 @@ class BiliRadarPlugin(BasePlugin):
             "enabled": ConfigField(type=bool, default=False, description="是否启用插件"),
         },
         "polling": {
-            "interval_seconds": ConfigField(type=int, default=120, description="轮询间隔（秒）"),
+            "interval_seconds": ConfigField(type=int, default=600, description="轮询间隔（秒）"),
             "max_concurrency": ConfigField(type=int, default=3, description="同时请求的最大 mid 数量"),
         },
         "bilibili": {
@@ -547,7 +547,7 @@ class BiliRadarPlugin(BasePlugin):
             ),
         },
         "permission": {
-            "admin_only": ConfigField(type=bool, default=True, description="是否仅管理员可修改订阅"),
+            "admin_only": ConfigField(type=bool, default=True, description="是否仅管理员可修改订阅（目前无效）"),
             "operator_allowlist": ConfigField(type=list, default=[], description="操作员白名单（用户 ID 列表）"),
         },
     }
