@@ -10,7 +10,7 @@ from src.common.logger import get_logger
 logger = get_logger(__name__)
 
 import httpx
-from src.plugin_system.apis import send_api
+from src.plugin_system.apis import send_api, chat_api
 
 
 class BiliPollingTask:
@@ -251,7 +251,29 @@ class BiliPollingTask:
             )
             
             # 发送到目标群 (不存储消息，防止Bot自我回路过滤)
-            await self.send_api.text_to_stream(subscription.stream_id, message, storage_message=False)
+            # CRITICAL FIX: Parameter order was swapped (text, stream_id)
+            success = await self.send_api.text_to_stream(message, subscription.stream_id, storage_message=False)
+
+            # Healing logic: if push failed, try to recover stream_id
+            if not success:
+                logger.warning(f"Push failed for stream_id={subscription.stream_id}, attempting to heal...")
+                new_stream = None
+                if subscription.group_id:
+                    new_stream = chat_api.get_stream_by_group_id(subscription.group_id, platform=subscription.platform)
+                elif subscription.user_id:
+                    new_stream = chat_api.get_stream_by_user_id(subscription.user_id, platform=subscription.platform)
+                
+                if new_stream and new_stream.stream_id != subscription.stream_id:
+                    logger.info(f"Recovered new stream_id={new_stream.stream_id} for subscription {subscription.id}")
+                    # Retry with new stream_id
+                    success = await self.send_api.text_to_stream(message, new_stream.stream_id, storage_message=False)
+                    if success:
+                        # Update the stream_id in database for next time
+                        subscription.stream_id = new_stream.stream_id
+                        subscription.save()
+                        logger.info(f"Successfully retried push and updated stream_id for subscription {subscription.id}")
+                else:
+                    logger.error(f"Failed to heal stream for subscription {subscription.id}")
 
             # 更新订阅的 last_* 字段
             await self.dao.update_last_video(

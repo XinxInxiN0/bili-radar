@@ -31,6 +31,9 @@ class BiliSubscription(Model):
     
     # 订阅关系
     stream_id = TextField(null=False, help_text="群聊天流 ID")
+    platform = TextField(default="qq", help_text="平台标识")
+    group_id = TextField(null=True, help_text="群聊天 ID (稳定标识)")
+    user_id = TextField(null=True, help_text="私聊用户 ID (稳定标识)")
     mid = IntegerField(null=False, help_text="UP 主 mid")
     up_name = TextField(null=True, help_text="UP 主昵称")
     
@@ -62,10 +65,12 @@ class BiliSubscriptionDAO:
     提供订阅的 CRUD 操作
     """
     
-    @staticmethod
     async def add_subscription(
         stream_id: str,
         mid: int,
+        platform: str = "qq",
+        group_id: Optional[str] = None,
+        user_id: Optional[str] = None,
         up_name: Optional[str] = None,
         last_bvid: Optional[str] = None,
         last_title: Optional[str] = None,
@@ -76,6 +81,9 @@ class BiliSubscriptionDAO:
         Args:
             stream_id: 群聊天流 ID
             mid: UP 主 mid
+            platform: 平台标识
+            group_id: 群聊天 ID
+            user_id: 私聊用户 ID
             up_name: UP 主昵称
             last_bvid: 初始化的最后 bvid（可选）
             last_title: 初始化的最后标题（可选）
@@ -89,6 +97,9 @@ class BiliSubscriptionDAO:
         """
         subscription = BiliSubscription.create(
             stream_id=stream_id,
+            platform=platform,
+            group_id=group_id,
+            user_id=user_id,
             mid=mid,
             up_name=up_name,
             enabled=True,
@@ -98,7 +109,7 @@ class BiliSubscriptionDAO:
             created_at=datetime.now(),
             updated_at=datetime.now(),
         )
-        logger.debug(f"DAO: Subscription added: stream_id={stream_id}, mid={mid}, up_name={up_name}")
+        logger.debug(f"DAO: Subscription added: stream_id={stream_id}, platform={platform}, mid={mid}, up_name={up_name}")
         return subscription
     
     @staticmethod
@@ -256,6 +267,18 @@ class BiliSubscriptionDAO:
             if "last_title" not in columns:
                 logger.info("Migrating: Adding column 'last_title' to 'bili_subscription'")
                 database.execute_sql('ALTER TABLE bili_subscription ADD COLUMN last_title TEXT;')
+            
+            if "platform" not in columns:
+                logger.info("Migrating: Adding column 'platform' to 'bili_subscription'")
+                database.execute_sql("ALTER TABLE bili_subscription ADD COLUMN platform TEXT DEFAULT 'qq';")
+
+            if "group_id" not in columns:
+                logger.info("Migrating: Adding column 'group_id' to 'bili_subscription'")
+                database.execute_sql("ALTER TABLE bili_subscription ADD COLUMN group_id TEXT;")
+            
+            if "user_id" not in columns:
+                logger.info("Migrating: Adding column 'user_id' to 'bili_subscription'")
+                database.execute_sql("ALTER TABLE bili_subscription ADD COLUMN user_id TEXT;")
                 
         except Exception as e:
             logger.error(f"Migration error: {e}")

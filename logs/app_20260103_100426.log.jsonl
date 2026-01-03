@@ -1,0 +1,52 @@
+{"logger_name": "config", "event": "MaiCore当前版本: 0.12.1", "level": "info", "lineno": 458, "module": "src.config.config", "timestamp": "01-03 10:04:29"}
+{"logger_name": "config", "event": "未检测到bot_config模板默认值变动", "level": "info", "lineno": 259, "module": "src.config.config", "timestamp": "01-03 10:04:30"}
+{"logger_name": "config", "event": "compare下的bot_config模板版本不低于当前模板，无需替换: E:\\MaiM-with-u\\MaiBot\\template\\compare\\bot_config_template.toml", "level": "debug", "lineno": 269, "module": "src.config.config", "timestamp": "01-03 10:04:30"}
+{"logger_name": "config", "event": "检测到bot_config配置文件版本号相同 (v7.3.1)，跳过更新", "level": "info", "lineno": 282, "module": "src.config.config", "timestamp": "01-03 10:04:30"}
+{"logger_name": "config", "event": "未检测到model_config模板默认值变动", "level": "info", "lineno": 259, "module": "src.config.config", "timestamp": "01-03 10:04:30"}
+{"logger_name": "config", "event": "compare下的model_config模板版本不低于当前模板，无需替换: E:\\MaiM-with-u\\MaiBot\\template\\compare\\model_config_template.toml", "level": "debug", "lineno": 269, "module": "src.config.config", "timestamp": "01-03 10:04:30"}
+{"logger_name": "config", "event": "检测到model_config配置文件版本号相同 (v1.11.0)，跳过更新", "level": "info", "lineno": 282, "module": "src.config.config", "timestamp": "01-03 10:04:30"}
+{"logger_name": "config", "event": "正在品鉴配置文件...", "level": "info", "lineno": 462, "module": "src.config.config", "timestamp": "01-03 10:04:30"}
+{"logger_name": "config", "event": "非常的新鲜，非常的美味！", "level": "info", "lineno": 465, "module": "src.config.config", "timestamp": "01-03 10:04:30"}
+{"logger_name": "database_model", "event": "开始同步数据库字段约束...", "level": "debug", "lineno": 496, "module": "src.common.database.database_model", "timestamp": "01-03 10:04:31"}
+{"logger_name": "database_model", "event": "检查表 'chat_streams' 的字段约束...", "level": "debug", "lineno": 522, "module": "src.common.database.database_model", "timestamp": "01-03 10:04:31"}
+{"logger_name": "database_model", "event": "表 'chat_streams' 的字段约束已同步", "level": "debug", "lineno": 570, "module": "src.common.database.database_model", "timestamp": "01-03 10:04:31"}
+{"logger_name": "database_model", "event": "检查表 'llm_usage' 的字段约束...", "level": "debug", "lineno": 522, "module": "src.common.database.database_model", "timestamp": "01-03 10:04:31"}
+{"logger_name": "database_model", "event": "表 'llm_usage' 的字段约束已同步", "level": "debug", "lineno": 570, "module": "src.common.database.database_model", "timestamp": "01-03 10:04:31"}
+{"logger_name": "database_model", "event": "检查表 'emoji' 的字段约束...", "level": "debug", "lineno": 522, "module": "src.common.database.database_model", "timestamp": "01-03 10:04:31"}
+{"logger_name": "database_model", "event": "表 'emoji' 的字段约束已同步", "level": "debug", "lineno": 570, "module": "src.common.database.database_model", "timestamp": "01-03 10:04:31"}
+{"logger_name": "database_model", "event": "检查表 'messages' 的字段约束...", "level": "debug", "lineno": 522, "module": "src.common.database.database_model", "timestamp": "01-03 10:04:31"}
+{"logger_name": "database_model", "event": "表 'messages' 的字段约束已同步", "level": "debug", "lineno": 570, "module": "src.common.database.database_model", "timestamp": "01-03 10:04:31"}
+{"logger_name": "database_model", "event": "检查表 'images' 的字段约束...", "level": "debug", "lineno": 522, "module": "src.common.database.database_model", "timestamp": "01-03 10:04:31"}
+{"logger_name": "database_model", "event": "表 'images' 的字段约束已同步", "level": "debug", "lineno": 570, "module": "src.common.database.database_model", "timestamp": "01-03 10:04:31"}
+{"logger_name": "database_model", "event": "检查表 'image_descriptions' 的字段约束...", "level": "debug", "lineno": 522, "module": "src.common.database.database_model", "timestamp": "01-03 10:04:31"}
+{"logger_name": "database_model", "event": "表 'image_descriptions' 的字段约束已同步", "level": "debug", "lineno": 570, "module": "src.common.database.database_model", "timestamp": "01-03 10:04:31"}
+{"logger_name": "database_model", "event": "检查表 'emoji_description_cache' 的字段约束...", "level": "debug", "lineno": 522, "module": "src.common.database.database_model", "timestamp": "01-03 10:04:31"}
+{"logger_name": "database_model", "event": "表 'emoji_description_cache' 的字段约束已同步", "level": "debug", "lineno": 570, "module": "src.common.database.database_model", "timestamp": "01-03 10:04:31"}
+{"logger_name": "database_model", "event": "检查表 'online_time' 的字段约束...", "level": "debug", "lineno": 522, "module": "src.common.database.database_model", "timestamp": "01-03 10:04:31"}
+{"logger_name": "database_model", "event": "表 'online_time' 的字段约束已同步", "level": "debug", "lineno": 570, "module": "src.common.database.database_model", "timestamp": "01-03 10:04:31"}
+{"logger_name": "database_model", "event": "检查表 'person_info' 的字段约束...", "level": "debug", "lineno": 522, "module": "src.common.database.database_model", "timestamp": "01-03 10:04:31"}
+{"logger_name": "database_model", "event": "表 'person_info' 的字段约束已同步", "level": "debug", "lineno": 570, "module": "src.common.database.database_model", "timestamp": "01-03 10:04:31"}
+{"logger_name": "database_model", "event": "检查表 'expression' 的字段约束...", "level": "debug", "lineno": 522, "module": "src.common.database.database_model", "timestamp": "01-03 10:04:31"}
+{"logger_name": "database_model", "event": "表 'expression' 的字段约束已同步", "level": "debug", "lineno": 570, "module": "src.common.database.database_model", "timestamp": "01-03 10:04:31"}
+{"logger_name": "database_model", "event": "检查表 'action_records' 的字段约束...", "level": "debug", "lineno": 522, "module": "src.common.database.database_model", "timestamp": "01-03 10:04:31"}
+{"logger_name": "database_model", "event": "表 'action_records' 的字段约束已同步", "level": "debug", "lineno": 570, "module": "src.common.database.database_model", "timestamp": "01-03 10:04:31"}
+{"logger_name": "database_model", "event": "检查表 'jargon' 的字段约束...", "level": "debug", "lineno": 522, "module": "src.common.database.database_model", "timestamp": "01-03 10:04:31"}
+{"logger_name": "database_model", "event": "表 'jargon' 的字段约束已同步", "level": "debug", "lineno": 570, "module": "src.common.database.database_model", "timestamp": "01-03 10:04:31"}
+{"logger_name": "database_model", "event": "检查表 'chat_history' 的字段约束...", "level": "debug", "lineno": 522, "module": "src.common.database.database_model", "timestamp": "01-03 10:04:31"}
+{"logger_name": "database_model", "event": "表 'chat_history' 的字段约束已同步", "level": "debug", "lineno": 570, "module": "src.common.database.database_model", "timestamp": "01-03 10:04:31"}
+{"logger_name": "database_model", "event": "检查表 'thinking_back' 的字段约束...", "level": "debug", "lineno": 522, "module": "src.common.database.database_model", "timestamp": "01-03 10:04:31"}
+{"logger_name": "database_model", "event": "表 'thinking_back' 的字段约束已同步", "level": "debug", "lineno": 570, "module": "src.common.database.database_model", "timestamp": "01-03 10:04:31"}
+{"logger_name": "database_model", "event": "数据库字段约束同步完成", "level": "debug", "lineno": 498, "module": "src.common.database.database_model", "timestamp": "01-03 10:04:31"}
+{"logger_name": "database_model", "event": "数据库初始化完成", "level": "info", "lineno": 505, "module": "src.common.database.database_model", "timestamp": "01-03 10:04:31"}
+{"logger_name": "person_info", "event": "已加载 217 个用户名称 (Peewee)", "level": "debug", "lineno": 591, "module": "src.person_info.person_info", "timestamp": "01-03 10:04:33"}
+{"logger_name": "memory_retrieval_tools", "event": "注册记忆检索工具: search_chat_history", "level": "info", "lineno": 102, "module": "src.memory_system.retrieval_tools.tool_registry", "timestamp": "01-03 10:04:38"}
+{"logger_name": "memory_retrieval_tools", "event": "注册记忆检索工具: get_chat_history_detail", "level": "info", "lineno": 102, "module": "src.memory_system.retrieval_tools.tool_registry", "timestamp": "01-03 10:04:38"}
+{"logger_name": "memory_retrieval_tools", "event": "注册记忆检索工具: query_person_info", "level": "info", "lineno": 102, "module": "src.memory_system.retrieval_tools.tool_registry", "timestamp": "01-03 10:04:38"}
+{"logger_name": "memory_retrieval_tools", "event": "注册记忆检索工具: query_words", "level": "info", "lineno": 102, "module": "src.memory_system.retrieval_tools.tool_registry", "timestamp": "01-03 10:04:38"}
+{"logger_name": "memory_retrieval_tools", "event": "注册记忆检索工具: finish_search", "level": "info", "lineno": 102, "module": "src.memory_system.retrieval_tools.tool_registry", "timestamp": "01-03 10:04:38"}
+{"logger_name": "memory_retrieval_tools", "event": "记忆检索工具 search_chat_history 已存在，跳过重复注册", "level": "debug", "lineno": 99, "module": "src.memory_system.retrieval_tools.tool_registry", "timestamp": "01-03 10:04:38"}
+{"logger_name": "memory_retrieval_tools", "event": "记忆检索工具 get_chat_history_detail 已存在，跳过重复注册", "level": "debug", "lineno": 99, "module": "src.memory_system.retrieval_tools.tool_registry", "timestamp": "01-03 10:04:38"}
+{"logger_name": "memory_retrieval_tools", "event": "记忆检索工具 query_person_info 已存在，跳过重复注册", "level": "debug", "lineno": 99, "module": "src.memory_system.retrieval_tools.tool_registry", "timestamp": "01-03 10:04:38"}
+{"logger_name": "memory_retrieval_tools", "event": "记忆检索工具 query_words 已存在，跳过重复注册", "level": "debug", "lineno": 99, "module": "src.memory_system.retrieval_tools.tool_registry", "timestamp": "01-03 10:04:38"}
+{"logger_name": "memory_retrieval_tools", "event": "记忆检索工具 finish_search 已存在，跳过重复注册", "level": "debug", "lineno": 99, "module": "src.memory_system.retrieval_tools.tool_registry", "timestamp": "01-03 10:04:38"}
+{"logger_name": "plugins.bili_radar.tasks.polling_task", "exc_info": true, "event": "Failed to push and update: stream_id=test_stream_id, mid=123, error=object MagicMock can't be used in 'await' expression", "level": "error", "lineno": 293, "module": "plugins.bili_radar.tasks.polling_task", "timestamp": "01-03 10:04:38"}

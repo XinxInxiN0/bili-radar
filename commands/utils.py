@@ -75,7 +75,7 @@ class RadarTestCommand:
             )
             
             # 发送消息
-            await self.message_sender.text_to_stream(stream_id, push_message)
+            await self.message_sender.text_to_stream(push_message, stream_id)
             
             logger.info(f"Test push successful: mid={mid}, bvid={latest_video.bvid}")
             

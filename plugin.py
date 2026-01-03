@@ -65,7 +65,13 @@ class RadarAddCommand(BaseCommand):
                 return True, None, 2
             
             mid = int(match.group(1))
-            stream_id = self.message.chat_stream.stream_id if self.message.chat_stream else ""
+            
+            # 提取流信息
+            chat_stream = self.message.chat_stream
+            stream_id = chat_stream.stream_id if chat_stream else ""
+            platform = chat_stream.platform if chat_stream else "qq"
+            group_id = chat_stream.group_info.group_id if chat_stream and chat_stream.group_info else None
+            user_id = chat_stream.user_info.user_id if chat_stream and chat_stream.user_info else None
             
             # 获取插件配置和组件
             plugin = get_plugin_instance()
@@ -101,6 +107,9 @@ class RadarAddCommand(BaseCommand):
                 await dao.add_subscription(
                     stream_id=stream_id,
                     mid=mid,
+                    platform=platform,
+                    group_id=group_id,
+                    user_id=user_id,
                     up_name=latest_video.author,
                     last_bvid=latest_video.bvid,
                     last_title=latest_video.title,
@@ -123,7 +132,14 @@ class RadarAddCommand(BaseCommand):
                 up_display = f"{up_name} ({mid})" if up_name else str(mid)
                 
                 # 获取失败，仍然创建订阅但不初始化视频信息
-                await dao.add_subscription(stream_id=stream_id, mid=mid, up_name=up_name)
+                await dao.add_subscription(
+                    stream_id=stream_id,
+                    mid=mid,
+                    platform=platform,
+                    group_id=group_id,
+                    user_id=user_id,
+                    up_name=up_name
+                )
                 logger.warning(
                     f"Failed to fetch latest video for mid={mid}, "
                     f"subscription created without initialization"
